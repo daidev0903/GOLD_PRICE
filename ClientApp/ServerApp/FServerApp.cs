@@ -12,6 +12,9 @@ using System.Windows.Forms;
 using System.Threading;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using Newtonsoft.Json;
+using System.Net.Http;
+using Newtonsoft.Json.Linq;
 
 namespace ServerApp
 {
@@ -76,23 +79,23 @@ namespace ServerApp
 
         private void ReceiveFromClient(object obj)
         {
-            //Socket client = (Socket)obj;
-            //try
-            //{
-            //    while (true)
-            //    {
-            //        byte[] data = new byte[1024 * 5000];
-            //        client.Receive(data);
-            //        string mess = (string)Deserialize(data);
-            //        clientActiTextbox.Text += $"{client.RemoteEndPoint.ToString()}:{mess}{Environment.NewLine}";
-            //        //checkString1(mess, clien);
-            //    }
+            Socket client = (Socket)obj;
+            try
+            {
+                while (true)
+                {
+                    byte[] data = new byte[1024 * 5000];
+                    client.Receive(data);
+                    string mess = (string)Deserialize(data);
+                    clientActiTextbox.Text += $"{client.RemoteEndPoint.ToString()}:{mess}{Environment.NewLine}";
+                    //checkString1(mess, clien);
+                }
 
-            //}
-            //catch { }
+            }
+            catch { }
         }
 
-        
+
         object Deserialize(byte[] data)
         {
             MemoryStream stream = new MemoryStream(data);
@@ -163,7 +166,7 @@ namespace ServerApp
             serverSocket.Send(buffer, 0, buffer.Length, SocketFlags.None);
         }
 
-        
+
 
         //private void HandleRequestClient(byte[] requestBuff, Socket client)
         //{
@@ -173,5 +176,28 @@ namespace ServerApp
         //        clientActiTextbox.AppendText($"{client.RemoteEndPoint.ToString()}: Connected at {DateTime.Now.ToString()} {Environment.NewLine}");
         //    }
         //}
+
+        public static dynamic read_json_file(string file_name)
+        {
+            dynamic json = JsonConvert.DeserializeObject(File.ReadAllText(file_name));
+            return json;
+        }
+
+        static dynamic make_Http_Request(string url)
+        {
+            HttpWebRequest request = HttpWebRequest.CreateHttp(url);
+            var response = request.GetResponse();
+            StreamReader reader = new StreamReader(response.GetResponseStream());
+            string result = reader.ReadToEnd();
+            dynamic json = JsonConvert.DeserializeObject(result);
+            return json;
+        }
+
+        static void update_gold_prices(string file_name)
+        {
+            dynamic json = make_Http_Request("https://tygia.com/json.php?ran=0&rate=0&gold=1&bank=VIETCOM&date=now");
+            string json_string = JsonConvert.SerializeObject(json);
+            File.WriteAllText(file_name, json_string);
+        }
     }
 }
